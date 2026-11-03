@@ -54,6 +54,7 @@
     }
 
     /* 3D Background Canvas */
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     #admin-webgl {
       position: fixed;
       top: 0;
@@ -771,6 +772,10 @@
           <span id="status-text">Synced with storage</span>
         </div>
         <div class="header-actions">
+          <button id="btn-sync-git" class="btn btn-secondary" style="border-color: rgba(56,189,248,0.35); color: #38bdf8;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Sync Live (GitHub & Vercel)
+          </button>
           <button id="btn-save-disk" class="btn btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
             Save Changes
@@ -1485,11 +1490,12 @@
       if (typeof syncProfileData === "function") syncProfileData();
       if (typeof syncSocialData === "function") syncSocialData();
       
-      // Save locally to localStorage as immediate backup
+      // Save locally to localStorage as immediate persistent cache
       try {
         localStorage.setItem("saidkhan_site_data", JSON.stringify(SITE_DATA));
       } catch (e) {}
 
+      let apiSaved = false;
       try {
         const res = await fetch("/api/save", {
           method: "POST",
@@ -1499,25 +1505,33 @@
           },
           body: JSON.stringify({ data: SITE_DATA })
         });
-        const contentType = res.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-          const json = await res.json();
-          if (json.success) {
-            markClean();
-            if (!silent) {
-              showToast(json.message || "All changes saved to disk successfully!", true);
+        
+        if (res.ok) {
+          const contentType = res.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const json = await res.json();
+            if (json.success) {
+              apiSaved = true;
+              markClean();
+              if (!silent) {
+                showToast(json.message || "All changes saved to disk successfully!", true);
+              }
+              return true;
             }
-            return true;
           }
+        } else if (res.status === 401) {
+          console.warn("API 401 Unauthorized - session expired");
         }
       } catch (err) {
         console.warn("API save endpoint not reachable:", err);
       }
 
-      // Static / Vercel fallback
+      // Static / Browser cache fallback
       markClean();
       if (!silent) {
-        showToast("Changes saved in browser session! (Click 'Download Backup' to export)", true);
+        if (!apiSaved) {
+          showToast("Changes saved in browser session! (Open http://localhost:3000/admin to sync with files)", true);
+        }
       }
       return true;
     }
@@ -1537,42 +1551,38 @@
       e.preventDefault();
       const password = document.getElementById("admin-password").value.trim();
 
-      // Instant direct validation for Said Khan password
-      if (password === "saidkhan2026") {
-        AUTH_TOKEN = "saidkhan-token-" + Date.now();
-        localStorage.setItem("saidkhan_studio_token", AUTH_TOKEN);
-        document.getElementById("login-overlay").style.display = "none";
-        showToast("Welcome Said! Studio access granted.");
-        await loadSiteData();
+      if (password !== "saidkhan2026") {
+        alert("ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন।");
         return;
       }
 
+      // Default master token accepted by server
+      AUTH_TOKEN = "saidkhan-master-token";
+
+      // Attempt server login to get registered session token
       try {
         const res = await fetch("/api/auth", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ password })
         });
-        const contentType = res.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-          const json = await res.json();
-          if (json.success) {
-            AUTH_TOKEN = json.token;
-            localStorage.setItem("saidkhan_studio_token", AUTH_TOKEN);
-            document.getElementById("login-overlay").style.display = "none";
-            showToast("Welcome Said! Studio access granted.");
-            await loadSiteData();
-            return;
-          } else {
-            alert(json.error || "Login failed. Please check password.");
-            return;
+        if (res.ok) {
+          const contentType = res.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const json = await res.json();
+            if (json.success && json.token) {
+              AUTH_TOKEN = json.token;
+            }
           }
         }
       } catch (err) {
-        console.warn("API Auth error:", err);
+        console.warn("API Auth offline, continuing with master token:", err);
       }
-      
-      alert("ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন।");
+
+      localStorage.setItem("saidkhan_studio_token", AUTH_TOKEN);
+      document.getElementById("login-overlay").style.display = "none";
+      showToast("Welcome Said! Studio access granted.");
+      await loadSiteData();
     });
 
     // Logout
@@ -1585,7 +1595,7 @@
 
     // Load data from Backendless API or static fallback
     async function loadSiteData() {
-      // 1. Try /api/data
+      // 1. Try local server /api/data (direct disk sync)
       try {
         const res = await fetch("/api/data");
         const contentType = res.headers.get("content-type") || "";
@@ -1593,16 +1603,33 @@
           const json = await res.json();
           if (json.success && json.data) {
             SITE_DATA = json.data;
+            try { localStorage.setItem("saidkhan_site_data", JSON.stringify(SITE_DATA)); } catch(e){}
             renderAll();
             markClean();
             return;
           }
         }
       } catch (err) {
-        console.warn("API data not available, falling back to static data", err);
+        console.warn("API data not available, falling back to cached/static data", err);
       }
 
-      // 2. Fallback to data/site.json
+      // 2. Check localStorage cache (preserves browser deletions/edits even on static host)
+      try {
+        const cached = localStorage.getItem("saidkhan_site_data");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && (parsed.work || parsed.home || parsed.title)) {
+            SITE_DATA = parsed;
+            renderAll();
+            markClean();
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("localStorage site data parse failed", e);
+      }
+
+      // 3. Fallback to data/site.json
       try {
         const res = await fetch("data/site.json");
         SITE_DATA = await res.json();
@@ -1610,10 +1637,10 @@
         markClean();
         return;
       } catch (e) {
-        console.warn("Static /data/site.json fetch failed", e);
+        console.warn("Static data/site.json fetch failed", e);
       }
 
-      // 3. Fallback to window APP.data
+      // 4. Fallback to window APP.data
       if (window.APP && window.APP.data) {
         SITE_DATA = window.APP.data;
         renderAll();
@@ -1810,6 +1837,8 @@
       const container = document.getElementById("work-list-container");
       container.innerHTML = "";
       const list = SITE_DATA.work?.list || [];
+      const elCount = document.getElementById("stat-work-count");
+      if (elCount) elCount.textContent = list.length;
 
       list.forEach((item, index) => {
         const row = document.createElement("div");
@@ -1835,6 +1864,8 @@
       const container = document.getElementById("art-list-container");
       container.innerHTML = "";
       const list = SITE_DATA.art?.list || [];
+      const elCount = document.getElementById("stat-art-count");
+      if (elCount) elCount.textContent = list.length;
 
       list.forEach((item, index) => {
         const row = document.createElement("div");
@@ -1860,6 +1891,8 @@
       const container = document.getElementById("press-list-container");
       container.innerHTML = "";
       const list = SITE_DATA.press?.list || [];
+      const elCount = document.getElementById("stat-press-count");
+      if (elCount) elCount.textContent = list.length;
 
       list.forEach((item, index) => {
         const row = document.createElement("div");
@@ -2407,6 +2440,38 @@
     document.getElementById("btn-save-disk").addEventListener("click", async () => {
       await saveChangesToDisk(false);
     });
+
+    // Sync Live to GitHub & Vercel
+    const btnSyncGit = document.getElementById("btn-sync-git");
+    if (btnSyncGit) {
+      btnSyncGit.addEventListener("click", async () => {
+        await saveChangesToDisk(true);
+        const originalText = btnSyncGit.innerHTML;
+        btnSyncGit.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg> Syncing Live...`;
+        btnSyncGit.disabled = true;
+
+        try {
+          const res = await fetch("/api/git-sync", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${AUTH_TOKEN}`
+            }
+          });
+          const json = await res.json();
+          if (json.success) {
+            showToast(json.message || "All changes pushed live to GitHub Pages & Vercel!", true);
+          } else {
+            alert(json.error || "Git sync failed.");
+          }
+        } catch (err) {
+          alert("To sync live, make sure local server is active (http://localhost:3000/admin) or download JSON from System & Backup.");
+        } finally {
+          btnSyncGit.innerHTML = originalText;
+          btnSyncGit.disabled = false;
+        }
+      });
+    }
 
     // Keyboard shortcut Ctrl+S or Cmd+S
     window.addEventListener("keydown", (e) => {

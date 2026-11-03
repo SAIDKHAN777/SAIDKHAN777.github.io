@@ -773,32 +773,6 @@
         "thumb": "assets/images/press/net-304.jpg",
         "tags": "ai, nlp, natural language processing, artificial intelligence, computer vision, image recognition, 3D, websites, feature, cover, feature, article, webgl, threejs"
       }
-    ],
-    "interviews": [
-      {
-        "title": "NET Magazine #283",
-        "subtitle": "How We Built the War of 1996",
-        "link": "https://drive.google.com/file/d/0B5VhrBQx_fg2YWh0eFhWVHBvOHM/view?usp=sharing",
-        "thumb": "assets/images/net-issue-288.jpg"
-      },
-      {
-        "title": "FWA: Insights",
-        "subtitle": "The War of 1996",
-        "link": "https://thefwa.com/article/insights-the-war-of-1996",
-        "thumb": "assets/images/fwa-article.jpg"
-      },
-      {
-        "title": "FWA Interview",
-        "subtitle": "",
-        "link": "https://thefwa.com/interviews/richard-mattka",
-        "thumb": "assets/images/fwa-article.jpg"
-      },
-      {
-        "title": "CSS Design Awards Interview",
-        "subtitle": "",
-        "link": "https://www.cssdesignawards.com/judge-interview/richard-mattka/246/",
-        "thumb": "assets/images/cssda-article.jpg"
-      }
     ]
   },
   "info": {

@@ -387,35 +387,6 @@ APP.press = {
     $(".press .press-title").html("[ features | tutorials | articles ]");
     $(".press .list").html(l);
 
-    //iterate the interviews and build list
-    var l = "",
-      a = 0;
-    var list = data.interviews;
-    $.each(list, function (i, o) {
-      if (a % 2 == 0) {
-        align = "right";
-      } else {
-        align = "";
-      }
-      l +=
-        "<div data-aos='fade-up' data-aos-easing='ease-in-out' data-aos-offset='0' data-aos-duration='1000' data-aos-delay='0'><div class='list-item press-item " +
-        align +
-        "' data-link='" +
-        o.link +
-        "'><img src='" +
-        o.thumb +
-        "' /><div class='titles'><div class='title'>" +
-        o.title +
-        "</div><div class='subtitle'>" +
-        o.subtitle +
-        "</div></div></div></div>";
-      a++;
-    });
-
-    // update page
-    $(".press .interviews-title").html("[ interviews | speaking | features ]");
-    $(".press .interviews-list").html(l);
-
     // assign click handlers
     $(".press .press-item").click(function () {
       APP.sounds["click"].play();

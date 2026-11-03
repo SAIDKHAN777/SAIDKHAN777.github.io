@@ -120,14 +120,6 @@ APP.data = {
         "featured": true
       },
       {
-        "title": "Music Selfie Experiment",
-        "subtitle": "Lincoln Motor Company, Grammys, Jam3",
-        "thumb": "assets/images/work/musicselfie/pic6.jpg",
-        "link": "work/music-selfie",
-        "featured": true,
-        "tags": "webgl, animation, motion, mobile, desktop, data, ai, social, fil, dynamic, video, api, weather, locaiton"
-      },
-      {
         "title": "Come On Oblivion | Finger Eleven",
         "subtitle": "Music Video | Director",
         "role": "Director | Visual Effects | Shaders",

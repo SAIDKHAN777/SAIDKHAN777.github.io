@@ -77,7 +77,20 @@
 	<script src="js/main.js?v=20261025_direct"></script>
 	<script src="js/views.js?v=20261025_direct"></script>
 	<script src="js/webgl.js?v=20261025_direct"></script>
-	<script src="data/site.js?v=20261025_mono"></script>
+	<script src="data/site.js?v=20261103_sync"></script>
+	<script>
+		// Seamless real-time sync with Admin changes from localStorage
+		try {
+			var _storedData = localStorage.getItem("saidkhan_site_data");
+			if (_storedData) {
+				var _parsedData = JSON.parse(_storedData);
+				if (_parsedData && (_parsedData.work || _parsedData.title)) {
+					window.APP = window.APP || {};
+					window.APP.data = _parsedData;
+				}
+			}
+		} catch (e) {}
+	</script>
 	<script src="libs/utils.js?v=20261025_direct"></script>
 
 	<script>

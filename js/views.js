@@ -307,6 +307,14 @@ APP.work = {
   },
   show: function (dir) {
     console.log("show work");
+    try {
+      var _stored = localStorage.getItem("saidkhan_site_data");
+      if (_stored) {
+        var _p = JSON.parse(_stored);
+        if (_p && _p.work) APP.data.work = _p.work;
+      }
+    } catch (e) {}
+    APP.work.init();
     APP.showPage($(".work"));
     $(".work .page-title").removeClass("aos-animate");
     $(".work .page-subtitle").removeClass("aos-animate");
@@ -422,6 +430,14 @@ APP.press = {
   },
   show: function (dir) {
     console.log("show press", dir);
+    try {
+      var _stored = localStorage.getItem("saidkhan_site_data");
+      if (_stored) {
+        var _p = JSON.parse(_stored);
+        if (_p && _p.press) APP.data.press = _p.press;
+      }
+    } catch (e) {}
+    APP.press.init();
     APP.showPage($(".press"), dir);
     $(".press .page-title").removeClass("aos-animate");
     $(".press .page-subtitle").removeClass("aos-animate");
@@ -586,6 +602,14 @@ APP.art = {
   },
   show: function (dir) {
     console.log("show art", dir);
+    try {
+      var _stored = localStorage.getItem("saidkhan_site_data");
+      if (_stored) {
+        var _p = JSON.parse(_stored);
+        if (_p && _p.art) APP.data.art = _p.art;
+      }
+    } catch (e) {}
+    APP.art.init();
     APP.showPage($(".art"), dir);
     $(".art .page-title").removeClass("aos-animate");
     $(".art .page-subtitle").removeClass("aos-animate");

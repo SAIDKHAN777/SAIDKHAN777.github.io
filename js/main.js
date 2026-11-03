@@ -76,6 +76,25 @@ APP.init = function(){
 	// hide all before start
 	$(".page").addClass("hide");
 
+	// Real-time cross-tab synchronization with Admin Console
+	window.addEventListener("storage", function(e) {
+		if (e.key === "saidkhan_site_data" && e.newValue) {
+			try {
+				var updated = JSON.parse(e.newValue);
+				if (updated) {
+					APP.data = updated;
+					if (APP.work && typeof APP.work.init === "function") APP.work.init();
+					if (APP.art && typeof APP.art.init === "function") APP.art.init();
+					if (APP.press && typeof APP.press.init === "function") APP.press.init();
+					if (APP.info && typeof APP.info.init === "function") APP.info.init();
+					if (APP.home && typeof APP.home.init === "function") APP.home.init();
+				}
+			} catch(err) {
+				console.warn("Storage sync error:", err);
+			}
+		}
+	});
+
 	APP.sounds=[];
 	// set up the site default sounds
 	$.each(APP.data.sounds,function(i, s){

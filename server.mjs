@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3005;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "saidkhan2026";
 const DATA_FILE = path.join(__dirname, "data", "site.js");
 const DATA_JSON = path.join(__dirname, "data", "site.json");

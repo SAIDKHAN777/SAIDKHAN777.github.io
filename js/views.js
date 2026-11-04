@@ -807,17 +807,20 @@ APP.info = {
     str = "";
     $.each(data.social, function (i, l) {
       target = "_blank";
-      if (l.url.includes("mailto")) {
+      var safeUrl = (l.url || "").trim();
+      if (safeUrl.includes("mailto:")) {
         target = "_self";
+      } else if (!safeUrl.startsWith("http://") && !safeUrl.startsWith("https://") && !safeUrl.startsWith("//")) {
+        safeUrl = "https://" + safeUrl;
       }
       str +=
         "<div data-aos='fade-in' data-aos-easing='ease-in-out' data-aos-offset='50' data-aos-duration='1000' data-aos-delay='50' class='list-item " +
-        l.class +
+        (l.class || "") +
         "'><a href='" +
-        l.url +
+        safeUrl +
         "' target='" +
         target +
-        "'><img title='" +
+        "' rel='noopener noreferrer'><img title='" +
         l.title +
         "' src='" +
         l.file +
@@ -859,6 +862,14 @@ APP.info = {
   },
   show: function (dir) {
     console.log("show info", dir);
+    try {
+      var _stored = localStorage.getItem("saidkhan_site_data");
+      if (_stored) {
+        var _p = JSON.parse(_stored);
+        if (_p && _p.info) APP.data.info = _p.info;
+      }
+    } catch (e) {}
+    APP.info.init();
     APP.showPage($(".info"), dir);
     $(".info .page-title").removeClass("aos-animate");
     $(".info .page-subtitle").removeClass("aos-animate");

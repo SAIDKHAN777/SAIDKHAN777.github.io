@@ -1624,6 +1624,14 @@
         if (cached) {
           const parsed = JSON.parse(cached);
           if (parsed && (parsed.work || parsed.home || parsed.title)) {
+            // Auto-heal legacy social links missing https://
+            if (parsed.info && Array.isArray(parsed.info.social)) {
+              parsed.info.social.forEach(s => {
+                if (s.url && !s.url.startsWith("http://") && !s.url.startsWith("https://") && !s.url.startsWith("//") && !s.url.startsWith("mailto:")) {
+                  s.url = "https://" + s.url;
+                }
+              });
+            }
             SITE_DATA = parsed;
             renderAll();
             markClean();
@@ -2314,6 +2322,15 @@
       }
     }
 
+    function ensureAbsoluteUrl(url) {
+      if (!url) return "";
+      url = url.trim();
+      if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("//") && !url.startsWith("mailto:")) {
+        return "https://" + url;
+      }
+      return url;
+    }
+
     function syncSocialData() {
       const githubUrl = document.getElementById("social-github").value.trim();
       const linkedinUrl = document.getElementById("social-linkedin").value.trim();
@@ -2323,16 +2340,16 @@
 
       const newSocial = [];
       if (githubUrl) {
-        newSocial.push({ title: "GitHub", url: githubUrl, file: "assets/images/social-github.svg" });
+        newSocial.push({ title: "GitHub", url: ensureAbsoluteUrl(githubUrl), file: "assets/images/social-github.svg" });
       }
       if (linkedinUrl) {
-        newSocial.push({ title: "LinkedIn", url: linkedinUrl, file: "assets/images/social-linkedin.svg" });
+        newSocial.push({ title: "LinkedIn", url: ensureAbsoluteUrl(linkedinUrl), file: "assets/images/social-linkedin.svg" });
       }
       if (facebookUrl) {
-        newSocial.push({ title: "Facebook", url: facebookUrl, file: "assets/images/social-facebook.svg" });
+        newSocial.push({ title: "Facebook", url: ensureAbsoluteUrl(facebookUrl), file: "assets/images/social-facebook.svg" });
       }
       if (whatsappUrl) {
-        newSocial.push({ title: "WhatsApp", url: whatsappUrl, file: "assets/images/social-whatsapp.svg" });
+        newSocial.push({ title: "WhatsApp", url: ensureAbsoluteUrl(whatsappUrl), file: "assets/images/social-whatsapp.svg" });
       }
       if (emailVal) {
         const mailtoUrl = emailVal.toLowerCase().startsWith("mailto:") ? emailVal : `mailto:${emailVal}`;

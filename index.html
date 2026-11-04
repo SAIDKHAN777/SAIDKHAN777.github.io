@@ -88,6 +88,13 @@
 			if (_storedData) {
 				var _parsedData = JSON.parse(_storedData);
 				if (_parsedData && (_parsedData.work || _parsedData.title)) {
+					if (_parsedData.info && Array.isArray(_parsedData.info.social)) {
+						_parsedData.info.social.forEach(function(s) {
+							if (s.url && !s.url.startsWith("http://") && !s.url.startsWith("https://") && !s.url.startsWith("//") && !s.url.startsWith("mailto:")) {
+								s.url = "https://" + s.url;
+							}
+						});
+					}
 					window.APP = window.APP || {};
 					window.APP.data = _parsedData;
 				}

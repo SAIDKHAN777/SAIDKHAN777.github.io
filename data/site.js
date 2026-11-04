@@ -1059,7 +1059,7 @@ APP.data = {
       },
       {
         "title": "LinkedIn",
-        "url": "www.linkedin.com/in/md-said-khan-2b4568431",
+        "url": "https://www.linkedin.com/in/md-said-khan-2b4568431",
         "file": "assets/images/social-linkedin.svg"
       },
       {

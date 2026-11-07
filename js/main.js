@@ -38,32 +38,39 @@ APP.init = function(){
 	this.checkPreloadComplete = function(){
 		console.log("CHECKING IF READY");
 		if(!APP.modelsLoaded) { return null;}
-		APP.loader.hide();
-		APP.header.show();
+		if(APP.loader && typeof APP.loader.hide === "function") APP.loader.hide();
+		if(APP.header && typeof APP.header.show === "function") APP.header.show();
 		APP.go(state,false);
-		
-		
 	}
 
-	
+	// Safety fallback: if WebGL or asset preloader gets stalled, dismiss loader and show UI after 3.5s
+	setTimeout(function() {
+		if(!APP.modelsLoaded) {
+			console.warn("Preload timeout safeguard reached: forcing UI display");
+			APP.modelsLoaded = true;
+			if(APP.loader && typeof APP.loader.hide === "function") APP.loader.hide();
+			if(APP.header && typeof APP.header.show === "function") APP.header.show();
+			if(typeof APP.go === "function") APP.go(state, false);
+		}
+	}, 3500);
 
-	// init the views 
-	APP.webGL.init();
-	APP.header.init();
-	APP.footer.init();
-	APP.menu.init();
-	APP.home.init();
-	APP.work.init();
-	APP.prototypes.init();
-	APP.press.init();
-	APP.art.init();
-	APP.info.init();
-	APP.workDetail.init();
-	APP.prototypesDetail.init();
-	APP.artDetail.init();
-	APP.pressDetail.init();
+	// init the views safely with error isolation
+	try { APP.webGL.init(); } catch(e) { console.warn("webGL init:", e); }
+	try { APP.header.init(); } catch(e) { console.warn("header init:", e); }
+	try { APP.footer.init(); } catch(e) { console.warn("footer init:", e); }
+	try { APP.menu.init(); } catch(e) { console.warn("menu init:", e); }
+	try { APP.home.init(); } catch(e) { console.warn("home init:", e); }
+	try { APP.work.init(); } catch(e) { console.warn("work init:", e); }
+	try { APP.prototypes.init(); } catch(e) { console.warn("prototypes init:", e); }
+	try { APP.press.init(); } catch(e) { console.warn("press init:", e); }
+	try { APP.art.init(); } catch(e) { console.warn("art init:", e); }
+	try { APP.info.init(); } catch(e) { console.warn("info init:", e); }
+	try { APP.workDetail.init(); } catch(e) { console.warn("workDetail init:", e); }
+	try { APP.prototypesDetail.init(); } catch(e) { console.warn("prototypesDetail init:", e); }
+	try { APP.artDetail.init(); } catch(e) { console.warn("artDetail init:", e); }
+	try { APP.pressDetail.init(); } catch(e) { console.warn("pressDetail init:", e); }
 
-	APP.videos.init();
+	try { APP.videos.init(); } catch(e) {}
 
 	VanillaTilt.init(document.querySelectorAll(".tilt"), {
 		reverse:true,
@@ -76,13 +83,23 @@ APP.init = function(){
 	// hide all before start
 	$(".page").addClass("hide");
 
-	// Real-time cross-tab synchronization with Admin Console
+	// Real-time cross-tab synchronization with Admin Console (non-destructive merge)
 	window.addEventListener("storage", function(e) {
 		if (e.key === "saidkhan_site_data" && e.newValue) {
 			try {
 				var updated = JSON.parse(e.newValue);
 				if (updated) {
-					APP.data = updated;
+					APP.data = APP.data || {};
+					if (updated.title) APP.data.title = updated.title;
+					if (updated["page-title"]) APP.data["page-title"] = updated["page-title"];
+					if (updated.description) APP.data.description = updated.description;
+					if (updated.home) APP.data.home = Object.assign(APP.data.home || {}, updated.home);
+					if (updated.work) APP.data.work = Object.assign(APP.data.work || {}, updated.work);
+					if (updated.press) APP.data.press = Object.assign(APP.data.press || {}, updated.press);
+					if (updated.art) APP.data.art = Object.assign(APP.data.art || {}, updated.art);
+					if (updated.prototypes) APP.data.prototypes = Object.assign(APP.data.prototypes || {}, updated.prototypes);
+					if (updated.info) APP.data.info = Object.assign(APP.data.info || {}, updated.info);
+
 					if (APP.work && typeof APP.work.init === "function") APP.work.init();
 					if (APP.art && typeof APP.art.init === "function") APP.art.init();
 					if (APP.press && typeof APP.press.init === "function") APP.press.init();
@@ -97,21 +114,23 @@ APP.init = function(){
 
 	APP.sounds=[];
 	// set up the site default sounds
-	$.each(APP.data.sounds,function(i, s){
-		var sound = new Howl({
-		  src: s.file,
-		  loop: s.loop,
-		  volume: s.volume,
-		  html5: s.html5,
-		  onend: function(o) {
-		    //console.log('Finished!',o);
-		  },
-		  name: s.name
+	if (APP.data && Array.isArray(APP.data.sounds)) {
+		$.each(APP.data.sounds,function(i, s){
+			var sound = new Howl({
+			  src: s.file,
+			  loop: s.loop,
+			  volume: s.volume,
+			  html5: s.html5,
+			  onend: function(o) {
+			    //console.log('Finished!',o);
+			  },
+			  name: s.name
+			});
+			APP.sounds[s.name] = sound;
+			APP.sounds[s.name].volume(s.volume);
+			APP.sounds[s.name].maxVolume=s.volume;
 		});
-		APP.sounds[s.name] = sound;
-		APP.sounds[s.name].volume(s.volume);
-		APP.sounds[s.name].maxVolume=s.volume;
-	});
+	}
 
 
 	// global mute control

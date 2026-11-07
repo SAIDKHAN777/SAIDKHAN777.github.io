@@ -51,6 +51,28 @@ APP.data = {
     "content": "Featured <b>work</b> with some of the most incredible teams and artists on the planet.",
     "list": [
       {
+        "title": "Bondhu-Travels",
+        "subtitle": "Bondhu-Travels",
+        "role": "Developer",
+        "thumb": "assets/images/share-3.jpg",
+        "link": "https://bondhutravels.netlify.app/",
+        "tags": "travel, tourism, booking, web, fullstack, development",
+        "class": "featured",
+        "content": "A high-performance modern luxury travel and booking web platform.",
+        "feature": {
+          "type": "image",
+          "id": "",
+          "source": "vimeo",
+          "title": "Bondhu-Travels",
+          "images": [
+            {
+              "file": "assets/images/share-3.jpg"
+            }
+          ],
+          "iframe": ""
+        }
+      },
+      {
         "title": "Ecommerce",
         "subtitle": "Aureus",
         "role": "Frontend Designer ",
@@ -68,7 +90,9 @@ APP.data = {
             }
           ],
           "iframe": ""
-        }
+        },
+        "tags": "featured, web, design, development",
+        "class": "featured"
       },
       {
         "title": "Portfolio ",
@@ -88,7 +112,9 @@ APP.data = {
             }
           ],
           "iframe": ""
-        }
+        },
+        "tags": "featured, web, design, development",
+        "class": "featured"
       },
       {
         "title": "portfolio ",
@@ -108,7 +134,9 @@ APP.data = {
           ],
           "iframe": ""
         },
-        "thumb": "assets/images/uploads/1792904531168-portfolio.png"
+        "thumb": "assets/images/uploads/1792904531168-portfolio.png",
+        "tags": "featured, web, design, development",
+        "class": "featured"
       },
       {
         "title": "Score with Pogba | AR Game",
@@ -117,7 +145,8 @@ APP.data = {
         "thumb": "assets/images/work/score-with-pogba/share-pogba.jpg",
         "link": "work/score-with-pogba",
         "tags": "pepsi,pizza hut, pogba,football,soccer,manchester,tool,webar,ar,gsap,webgl,webdev,gamedev,threejs,3d,vfx",
-        "featured": true
+        "featured": true,
+        "class": "featured"
       },
       {
         "title": "Come On Oblivion | Finger Eleven",
@@ -126,7 +155,8 @@ APP.data = {
         "thumb": "assets/images/work/come-on-oblivion/come-on-oblivion.jpg",
         "link": "work/come-on-oblivion",
         "tags": "music video,finger elevent,f11,vfx,visual effects, director,film,moview,short,after effects,shaders,glsl,music",
-        "featured": true
+        "featured": true,
+        "class": "featured"
       }
     ]
   },

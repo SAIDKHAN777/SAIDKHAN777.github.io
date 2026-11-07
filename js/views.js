@@ -232,26 +232,25 @@ APP.home = {
 APP.work = {
   _this: this,
   init: function () {
-    var data = APP.data.work;
-    var list = data.list;
+    var data = APP.data.work || {};
+    var list = data.list || [];
 
-    $(".work .page-title").html(data.title);
-    $(".work .page-subtitle").html(data.subtitle);
-    $(".work .page-content").html(data.content);
+    $(".work .page-title").html(data.title || "WORK");
+    $(".work .page-subtitle").html(data.subtitle || "");
+    $(".work .page-content").html(data.content || "");
 
     //iterate the art and build list
     var l = "",
       a = 0;
     $.each(list, function (i, p) {
-      if (a % 2 == 0) {
-        align = "right";
-      } else {
-        align = "";
-      }
+      if (!p) return;
+      var align = (a % 2 === 0) ? "right" : "";
 
       var thumbImg = p.thumb || p.feature?.images?.[0]?.file || p.media?.[0]?.file || "assets/images/share-3.jpg";
       var targetUrl = (p.link && (p.link.indexOf("http://") === 0 || p.link.indexOf("https://") === 0 || p.link.indexOf("//") === 0)) ? p.link : "";
       var hrefAttr = targetUrl ? ("href='" + targetUrl + "' target='_blank' rel='noopener noreferrer'") : "href='javascript:void(0)'";
+      var pTitle = p.title || "Untitled";
+      var pSubtitle = p.subtitle || "";
 
       if (a <= 12) {
         l +=
@@ -263,10 +262,10 @@ APP.work = {
           (targetUrl || p.link || "") +
           "' style='text-decoration:none; display:block;'><div class='tilt'><img src='" +
           thumbImg +
-          "' /><div class='titles'><div class='subtitle'>" +
-          p.subtitle +
+          "' onerror=\"this.src='assets/images/share-3.jpg'\" /><div class='titles'><div class='subtitle'>" +
+          pSubtitle +
           "</div><div class='title'>" +
-          p.title +
+          pTitle +
           "</div></div></div></a>";
       } else {
         l +=
@@ -278,10 +277,10 @@ APP.work = {
           (targetUrl || p.link || "") +
           "' style='text-decoration:none; display:block;'><div class='tilt'><img class='lazy' data-src='" +
           thumbImg +
-          "' /><div class='titles'><div class='subtitle'>" +
-          p.subtitle +
+          "' onerror=\"this.src='assets/images/share-3.jpg'\" /><div class='titles'><div class='subtitle'>" +
+          pSubtitle +
           "</div><div class='title'>" +
-          p.title +
+          pTitle +
           "</div></div></div></a>";
       }
 
@@ -1224,39 +1223,42 @@ APP.workDetail = {
     // related work
     str = "";
     // convert tags list to array and trim spaces
-    var tagsToMatch = data.tags.split(",").map(function (item) {
+    var tagsToMatch = (data && data.tags ? data.tags : "").split(",").map(function (item) {
       return item.trim();
-    });
+    }).filter(Boolean);
     var count = 0;
 
-    $.each(APP.data.work.list, function (i, l) {
-      var tags = l.tags.split(",").map(function (item) {
-        return item.trim();
-      });
-      if (
-        tagsToMatch.some((r) => tags.includes(r)) &&
-        l.link != data.link &&
-        count < 6
-      ) {
-        str +=
-          "<div data-link='" +
-          l.link +
-          "' class='tilt list-item " +
-          l.class +
-          "'>";
-        if (l.thumb) {
-          str += "<img src='" + l.thumb + "' />";
+    if (APP.data && APP.data.work && Array.isArray(APP.data.work.list)) {
+      $.each(APP.data.work.list, function (i, l) {
+        if (!l) return;
+        var tags = (l.tags ? l.tags : "").split(",").map(function (item) {
+          return item.trim();
+        }).filter(Boolean);
+        if (
+          tagsToMatch.some((r) => tags.includes(r)) &&
+          l.link != data.link &&
+          count < 6
+        ) {
+          str +=
+            "<div data-link='" +
+            (l.link || "") +
+            "' class='tilt list-item " +
+            (l.class || "") +
+            "'>";
+          if (l.thumb) {
+            str += "<img src='" + l.thumb + "' onerror=\"this.src='assets/images/share-3.jpg'\" />";
+          }
+          str +=
+            "<div class='titles'><div class='subtitle'>" +
+            (l.subtitle || "") +
+            "</div><div class='title'>" +
+            (l.title || "") +
+            "</div></div>";
+          str += "</div>";
+          count++;
         }
-        str +=
-          "<div class='titles'><div class='subtitle'>" +
-          l.subtitle +
-          "</div><div class='title'>" +
-          l.title +
-          "</div></div>";
-        str += "</div>";
-        count++;
-      }
-    });
+      });
+    }
 
     $(".work-detail .related-title").html("[ related work ]");
     $(".work-detail .related-list").html(str);
@@ -1294,51 +1296,44 @@ APP.workDetail = {
     }, 500);
   },
   goNext: function () {
-    var list = APP.data.work.list;
+    var list = (APP.data && APP.data.work && APP.data.work.list) ? APP.data.work.list : [];
+    if (!list.length) return;
     // find this index
     var index = 0;
-    var path = APP.state.split("/");
-    if (path[0]) {
-      var section = path[0];
-    }
-    if (path[1]) {
-      var page = path[1];
-    }
+    var path = (APP.state || "").split("/");
+    var section = path[0] || "";
+    var page = path[1] || "";
 
     $.each(list, function (i, l) {
-      var path = l.link.split("/");
-      var slug = path[1];
-      console.log(page, slug);
+      if (!l || !l.link) return;
+      var path = String(l.link).split("/");
+      var slug = path[1] || path[0];
       if (page == slug) {
         index = i;
         return false;
       }
     });
 
-    if (index < list.length - 1) {
+    if (index < list.length - 1 && list[index + 1]) {
       APP.go(list[index + 1].link, true);
-    } else {
-      console.log(list[0]);
+    } else if (list[0]) {
       APP.go(list[0].link, true);
     }
   },
 
   goBack: function () {
-    var list = APP.data.work.list;
+    var list = (APP.data && APP.data.work && APP.data.work.list) ? APP.data.work.list : [];
+    if (!list.length) return;
     // find this index
     var index = 0;
-    var path = APP.state.split("/");
-    if (path[0]) {
-      var section = path[0];
-    }
-    if (path[1]) {
-      var page = path[1];
-    }
+    var path = (APP.state || "").split("/");
+    var section = path[0] || "";
+    var page = path[1] || "";
 
     $.each(list, function (i, g) {
-      var path = g.link.split("/");
-      var slug = path[1];
-      console.log(page, slug);
+      if (!g || !g.link) return;
+      var path = String(g.link).split("/");
+      var slug = path[1] || path[0];
       if (page == slug) {
         index = i;
         return false;
@@ -1635,39 +1630,42 @@ APP.artDetail = {
     // related art
     str = "";
     // convert tags list to array and trim spaces
-    var tagsToMatch = data.tags.split(",").map(function (item) {
+    var tagsToMatch = (data && data.tags ? data.tags : "").split(",").map(function (item) {
       return item.trim();
-    });
+    }).filter(Boolean);
     var count = 0;
 
-    $.each(APP.data.art.list, function (i, l) {
-      var tags = l.tags.split(",").map(function (item) {
-        return item.trim();
-      });
-      if (
-        tagsToMatch.some((r) => tags.includes(r)) &&
-        l.link != data.link &&
-        count < 6
-      ) {
-        str +=
-          "<div data-link='" +
-          l.link +
-          "' class='tilt list-item " +
-          l.class +
-          "'>";
-        if (l.thumb) {
-          str += "<img src='" + l.thumb + "' />";
+    if (APP.data && APP.data.art && Array.isArray(APP.data.art.list)) {
+      $.each(APP.data.art.list, function (i, l) {
+        if (!l) return;
+        var tags = (l.tags ? l.tags : "").split(",").map(function (item) {
+          return item.trim();
+        }).filter(Boolean);
+        if (
+          tagsToMatch.some((r) => tags.includes(r)) &&
+          l.link != data.link &&
+          count < 6
+        ) {
+          str +=
+            "<div data-link='" +
+            (l.link || "") +
+            "' class='tilt list-item " +
+            (l.class || "") +
+            "'>";
+          if (l.thumb) {
+            str += "<img src='" + l.thumb + "' onerror=\"this.src='assets/images/share-3.jpg'\" />";
+          }
+          str +=
+            "<div class='titles'><div class='subtitle'>" +
+            (l.subtitle || "") +
+            "</div><div class='title'>" +
+            (l.title || "") +
+            "</div></div>";
+          str += "</div>";
+          count++;
         }
-        str +=
-          "<div class='titles'><div class='subtitle'>" +
-          l.subtitle +
-          "</div><div class='title'>" +
-          l.title +
-          "</div></div>";
-        str += "</div>";
-        count++;
-      }
-    });
+      });
+    }
 
     $(".art-detail .related-title").html("[ related art ]");
     $(".art-detail .related-list").html(str);
@@ -2035,39 +2033,42 @@ APP.pressDetail = {
     // related press
     str = "";
     // convert tags list to array and trim spaces
-    var tagsToMatch = data.tags.split(",").map(function (item) {
+    var tagsToMatch = (data && data.tags ? data.tags : "").split(",").map(function (item) {
       return item.trim();
-    });
+    }).filter(Boolean);
     var count = 0;
 
-    $.each(APP.data.press.list, function (i, l) {
-      var tags = l.tags.split(",").map(function (item) {
-        return item.trim();
-      });
-      if (
-        tagsToMatch.some((r) => tags.includes(r)) &&
-        l.link != data.link &&
-        count < 6
-      ) {
-        str +=
-          "<div data-link='" +
-          l.link +
-          "' class='tilt list-item " +
-          l.class +
-          "'>";
-        if (l.thumb) {
-          str += "<img src='" + l.thumb + "' />";
+    if (APP.data && APP.data.press && Array.isArray(APP.data.press.list)) {
+      $.each(APP.data.press.list, function (i, l) {
+        if (!l) return;
+        var tags = (l.tags ? l.tags : "").split(",").map(function (item) {
+          return item.trim();
+        }).filter(Boolean);
+        if (
+          tagsToMatch.some((r) => tags.includes(r)) &&
+          l.link != data.link &&
+          count < 6
+        ) {
+          str +=
+            "<div data-link='" +
+            (l.link || "") +
+            "' class='tilt list-item " +
+            (l.class || "") +
+            "'>";
+          if (l.thumb) {
+            str += "<img src='" + l.thumb + "' onerror=\"this.src='assets/images/share-3.jpg'\" />";
+          }
+          str +=
+            "<div class='titles'><div class='subtitle'>" +
+            (l.subtitle || "") +
+            "</div><div class='title'>" +
+            (l.title || "") +
+            "</div></div>";
+          str += "</div>";
+          count++;
         }
-        str +=
-          "<div class='titles'><div class='subtitle'>" +
-          l.subtitle +
-          "</div><div class='title'>" +
-          l.title +
-          "</div></div>";
-        str += "</div>";
-        count++;
-      }
-    });
+      });
+    }
 
     $(".press-detail .related-title").html("[ related press ]");
     $(".press-detail .related-list").html(str);
@@ -2492,39 +2493,42 @@ APP.prototypesDetail = {
     // related prototypes
     str = "";
     // convert tags list to array and trim spaces
-    var tagsToMatch = data.tags.split(",").map(function (item) {
+    var tagsToMatch = (data && data.tags ? data.tags : "").split(",").map(function (item) {
       return item.trim();
-    });
+    }).filter(Boolean);
     var count = 0;
 
-    $.each(APP.data.prototypes.list, function (i, l) {
-      var tags = l.tags.split(",").map(function (item) {
-        return item.trim();
-      });
-      if (
-        tagsToMatch.some((r) => tags.includes(r)) &&
-        l.link != data.link &&
-        count < 6
-      ) {
-        str +=
-          "<div data-link='" +
-          l.link +
-          "' class='tilt list-item " +
-          l.class +
-          "'>";
-        if (l.thumb) {
-          str += "<img src='" + l.thumb + "' />";
+    if (APP.data && APP.data.prototypes && Array.isArray(APP.data.prototypes.list)) {
+      $.each(APP.data.prototypes.list, function (i, l) {
+        if (!l) return;
+        var tags = (l.tags ? l.tags : "").split(",").map(function (item) {
+          return item.trim();
+        }).filter(Boolean);
+        if (
+          tagsToMatch.some((r) => tags.includes(r)) &&
+          l.link != data.link &&
+          count < 6
+        ) {
+          str +=
+            "<div data-link='" +
+            (l.link || "") +
+            "' class='tilt list-item " +
+            (l.class || "") +
+            "'>";
+          if (l.thumb) {
+            str += "<img src='" + l.thumb + "' onerror=\"this.src='assets/images/share-3.jpg'\" />";
+          }
+          str +=
+            "<div class='titles'><div class='subtitle'>" +
+            (l.subtitle || "") +
+            "</div><div class='title'>" +
+            (l.title || "") +
+            "</div></div>";
+          str += "</div>";
+          count++;
         }
-        str +=
-          "<div class='titles'><div class='subtitle'>" +
-          l.subtitle +
-          "</div><div class='title'>" +
-          l.title +
-          "</div></div>";
-        str += "</div>";
-        count++;
-      }
-    });
+      });
+    }
 
     $(".prototypes-detail .related-title").html("[ related prototypes ]");
     $(".prototypes-detail .related-list").html(str);

@@ -77,12 +77,12 @@
 	<script src="libs/TweenMax.min.js"></script>
 	
 	<!-- load core scripts -->
-	<script src="js/main.js?v=20261104"></script>
-	<script src="js/views.js?v=20261104"></script>
-	<script src="js/webgl.js?v=20261104"></script>
-	<script src="data/site.js?v=20261104"></script>
+	<script src="js/main.js?v=20261107"></script>
+	<script src="js/views.js?v=20261107"></script>
+	<script src="js/webgl.js?v=20261107"></script>
+	<script src="data/site.js?v=20261107"></script>
 	<script>
-		// Seamless real-time sync with Admin changes from localStorage
+		// Seamless real-time sync with Admin changes from localStorage (deep non-destructive merge)
 		try {
 			var _storedData = localStorage.getItem("saidkhan_site_data");
 			if (_storedData) {
@@ -96,10 +96,24 @@
 						});
 					}
 					window.APP = window.APP || {};
-					window.APP.data = _parsedData;
+					window.APP.data = window.APP.data || {};
+
+					// Selectively update editable content sections while 100% preserving WebGL shaders, models, textures & sounds
+					if (_parsedData.title) window.APP.data.title = _parsedData.title;
+					if (_parsedData["page-title"]) window.APP.data["page-title"] = _parsedData["page-title"];
+					if (_parsedData.description) window.APP.data.description = _parsedData.description;
+					if (_parsedData.shareImage) window.APP.data.shareImage = _parsedData.shareImage;
+					if (_parsedData.home) window.APP.data.home = Object.assign(window.APP.data.home || {}, _parsedData.home);
+					if (_parsedData.work) window.APP.data.work = Object.assign(window.APP.data.work || {}, _parsedData.work);
+					if (_parsedData.press) window.APP.data.press = Object.assign(window.APP.data.press || {}, _parsedData.press);
+					if (_parsedData.art) window.APP.data.art = Object.assign(window.APP.data.art || {}, _parsedData.art);
+					if (_parsedData.prototypes) window.APP.data.prototypes = Object.assign(window.APP.data.prototypes || {}, _parsedData.prototypes);
+					if (_parsedData.info) window.APP.data.info = Object.assign(window.APP.data.info || {}, _parsedData.info);
 				}
 			}
-		} catch (e) {}
+		} catch (e) {
+			console.warn("Storage sync notice:", e);
+		}
 	</script>
 	<script src="libs/utils.js?v=20261025_direct"></script>
 

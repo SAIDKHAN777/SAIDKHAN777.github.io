@@ -1495,6 +1495,16 @@
       if (typeof syncProfileData === "function") syncProfileData();
       if (typeof syncSocialData === "function") syncSocialData();
       
+      // Ensure all Three.js engine and background keys are NEVER lost
+      if (SITE_DATA && window.APP && window.APP.data) {
+        const engineKeys = ["BackgroundFragmentShader", "BackgroundVertexShader", "assets", "models", "textures", "reel", "sounds", "menu", "header", "footer"];
+        engineKeys.forEach(k => {
+          if (!SITE_DATA[k] && window.APP.data[k]) {
+            SITE_DATA[k] = window.APP.data[k];
+          }
+        });
+      }
+
       // Save locally to localStorage as immediate persistent cache
       try {
         localStorage.setItem("saidkhan_site_data", JSON.stringify(SITE_DATA));
@@ -2159,12 +2169,19 @@
     document.getElementById("work-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const idx = parseInt(document.getElementById("work-edit-index").value);
-      const title = document.getElementById("work-title").value;
-      const subtitle = document.getElementById("work-subtitle").value;
-      const role = document.getElementById("work-role").value;
-      const image = document.getElementById("work-image").value || "assets/images/share-3.jpg";
-      const link = document.getElementById("work-link").value;
-      const desc = document.getElementById("work-desc").value;
+      const title = document.getElementById("work-title").value.trim();
+      const subtitle = document.getElementById("work-subtitle").value.trim();
+      const role = document.getElementById("work-role").value.trim() || "Developer";
+      const image = document.getElementById("work-image").value.trim() || "assets/images/share-3.jpg";
+      let link = document.getElementById("work-link").value.trim();
+      const desc = document.getElementById("work-desc").value.trim();
+
+      const safeSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `project-${Date.now()}`;
+      if (!link) {
+        link = `work/${safeSlug}`;
+      } else if (!link.startsWith("http://") && !link.startsWith("https://") && !link.startsWith("//") && !link.startsWith("work/")) {
+        link = "https://" + link;
+      }
 
       const projectObj = {
         title,
@@ -2172,6 +2189,8 @@
         role,
         thumb: image,
         link,
+        tags: "featured, web, design, fullstack",
+        class: "featured",
         content: desc,
         feature: {
           type: "image",

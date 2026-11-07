@@ -51,10 +51,32 @@ APP.data = {
     "content": "Featured <b>work</b> with some of the most incredible teams and artists on the planet.",
     "list": [
       {
+        "title": "Whatsapp automation",
+        "subtitle": "Rashed",
+        "role": "Developer",
+        "thumb": "assets/images/work/whatsapp-automation.webp",
+        "link": "https://wa.me/8801814674777",
+        "tags": "whatsapp, automation, ai, nodejs, bot, meta",
+        "class": "featured",
+        "content": "Production-grade WhatsApp automation, AI customer workflows, and automated messaging system for Rashed.",
+        "feature": {
+          "type": "image",
+          "id": "",
+          "source": "vimeo",
+          "title": "Whatsapp automation",
+          "images": [
+            {
+              "file": "assets/images/work/whatsapp-automation.webp"
+            }
+          ],
+          "iframe": ""
+        }
+      },
+      {
         "title": "Bondhu-Travels",
         "subtitle": "Bondhu-Travels",
         "role": "Developer",
-        "thumb": "assets/images/share-3.jpg",
+        "thumb": "assets/images/work/bondhu-travels.webp",
         "link": "https://bondhutravels.netlify.app/",
         "tags": "travel, tourism, booking, web, fullstack, development",
         "class": "featured",
@@ -66,7 +88,7 @@ APP.data = {
           "title": "Bondhu-Travels",
           "images": [
             {
-              "file": "assets/images/share-3.jpg"
+              "file": "assets/images/work/bondhu-travels.webp"
             }
           ],
           "iframe": ""

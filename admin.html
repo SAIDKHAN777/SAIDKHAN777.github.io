@@ -1642,6 +1642,18 @@
                 }
               });
             }
+            // Auto-heal project thumbs
+            if (parsed.work && Array.isArray(parsed.work.list)) {
+              parsed.work.list.forEach(p => {
+                const t = (p.title || "").toLowerCase();
+                if (t.includes("bondhu") && (!p.thumb || p.thumb.includes("share-3.jpg") || p.thumb.startsWith("data:"))) {
+                  p.thumb = "assets/images/work/bondhu-travels.webp";
+                }
+                if (t.includes("whatsapp") && (!p.thumb || p.thumb.includes("share-3.jpg") || p.thumb.startsWith("data:"))) {
+                  p.thumb = "assets/images/work/whatsapp-automation.webp";
+                }
+              });
+            }
             SITE_DATA = parsed;
             renderAll();
             markClean();

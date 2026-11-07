@@ -247,6 +247,12 @@ APP.work = {
       var align = (a % 2 === 0) ? "right" : "";
 
       var thumbImg = p.thumb || p.feature?.images?.[0]?.file || p.media?.[0]?.file || "assets/images/share-3.jpg";
+      var tLower = (p.title || "").toLowerCase();
+      if (tLower.includes("bondhu") && (!thumbImg || thumbImg.includes("share-3.jpg"))) {
+        thumbImg = "assets/images/work/bondhu-travels.webp";
+      } else if (tLower.includes("whatsapp") && (!thumbImg || thumbImg.includes("share-3.jpg"))) {
+        thumbImg = "assets/images/work/whatsapp-automation.webp";
+      }
       var targetUrl = (p.link && (p.link.indexOf("http://") === 0 || p.link.indexOf("https://") === 0 || p.link.indexOf("//") === 0)) ? p.link : "";
       var hrefAttr = targetUrl ? ("href='" + targetUrl + "' target='_blank' rel='noopener noreferrer'") : "href='javascript:void(0)'";
       var pTitle = p.title || "Untitled";
@@ -310,7 +316,18 @@ APP.work = {
       var _stored = localStorage.getItem("saidkhan_site_data");
       if (_stored) {
         var _p = JSON.parse(_stored);
-        if (_p && _p.work) APP.data.work = _p.work;
+        if (_p && _p.work && Array.isArray(_p.work.list)) {
+          _p.work.list.forEach(function(p) {
+            var t = (p.title || "").toLowerCase();
+            if (t.includes("bondhu") && (!p.thumb || p.thumb.includes("share-3.jpg"))) {
+              p.thumb = "assets/images/work/bondhu-travels.webp";
+            }
+            if (t.includes("whatsapp") && (!p.thumb || p.thumb.includes("share-3.jpg"))) {
+              p.thumb = "assets/images/work/whatsapp-automation.webp";
+            }
+          });
+          APP.data.work = _p.work;
+        }
       }
     } catch (e) {}
     APP.work.init();

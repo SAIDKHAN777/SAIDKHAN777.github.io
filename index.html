@@ -77,10 +77,10 @@
 	<script src="libs/TweenMax.min.js"></script>
 	
 	<!-- load core scripts -->
-	<script src="js/main.js?v=20261107"></script>
-	<script src="js/views.js?v=20261107"></script>
-	<script src="js/webgl.js?v=20261107"></script>
-	<script src="data/site.js?v=20261107"></script>
+	<script src="js/main.js?v=20261107_v2"></script>
+	<script src="js/views.js?v=20261107_v2"></script>
+	<script src="js/webgl.js?v=20261107_v2"></script>
+	<script src="data/site.js?v=20261107_v2"></script>
 	<script>
 		// Seamless real-time sync with Admin changes from localStorage (deep non-destructive merge)
 		try {
@@ -95,6 +95,21 @@
 							}
 						});
 					}
+
+					// Auto-heal legacy or placeholder thumbs in cached work list
+					if (_parsedData.work && Array.isArray(_parsedData.work.list)) {
+						_parsedData.work.list.forEach(function(p) {
+							var t = (p.title || "").toLowerCase();
+							if (t.includes("bondhu") && (!p.thumb || p.thumb.includes("share-3.jpg"))) {
+								p.thumb = "assets/images/work/bondhu-travels.webp";
+							}
+							if (t.includes("whatsapp") && (!p.thumb || p.thumb.includes("share-3.jpg"))) {
+								p.thumb = "assets/images/work/whatsapp-automation.webp";
+							}
+						});
+						try { localStorage.setItem("saidkhan_site_data", JSON.stringify(_parsedData)); } catch(e){}
+					}
+
 					window.APP = window.APP || {};
 					window.APP.data = window.APP.data || {};
 

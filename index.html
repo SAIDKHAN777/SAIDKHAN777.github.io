@@ -77,25 +77,43 @@
 	<script src="libs/TweenMax.min.js"></script>
 	
 	<!-- load core scripts -->
-	<script src="js/main.js?v=20261107_v2"></script>
-	<script src="js/views.js?v=20261107_v2"></script>
-	<script src="js/webgl.js?v=20261107_v2"></script>
-	<script src="data/site.js?v=20261107_v2"></script>
+	<script src="js/main.js?v=20261111"></script>
+	<script src="js/views.js?v=20261111"></script>
+	<script src="js/webgl.js?v=20261111"></script>
+	<script src="data/site.js?v=20261111"></script>
 	<script>
+		// Helper to merge editable content sections safely while preserving WebGL assets
+		window.APP = window.APP || {};
+		window.APP.applyRemoteSiteData = function(parsed) {
+			if (!parsed || (!parsed.work && !parsed.title && !parsed.info)) return;
+			if (parsed.info && Array.isArray(parsed.info.social)) {
+				parsed.info.social.forEach(function(s) {
+					if (s.url && !s.url.startsWith("http://") && !s.url.startsWith("https://") && !s.url.startsWith("//") && !s.url.startsWith("mailto:")) {
+						s.url = "https://" + s.url;
+					}
+				});
+			}
+			window.APP.data = window.APP.data || {};
+			if (parsed.title) window.APP.data.title = parsed.title;
+			if (parsed["page-title"]) window.APP.data["page-title"] = parsed["page-title"];
+			if (parsed.description) window.APP.data.description = parsed.description;
+			if (parsed.shareImage) window.APP.data.shareImage = parsed.shareImage;
+			if (parsed.home) window.APP.data.home = Object.assign(window.APP.data.home || {}, parsed.home);
+			if (parsed.work) window.APP.data.work = Object.assign(window.APP.data.work || {}, parsed.work);
+			if (parsed.press) window.APP.data.press = Object.assign(window.APP.data.press || {}, parsed.press);
+			if (parsed.art) window.APP.data.art = Object.assign(window.APP.data.art || {}, parsed.art);
+			if (parsed.prototypes) window.APP.data.prototypes = Object.assign(window.APP.data.prototypes || {}, parsed.prototypes);
+			if (parsed.info) window.APP.data.info = Object.assign(window.APP.data.info || {}, parsed.info);
+		};
+
 		// Seamless real-time sync with Admin changes from localStorage (deep non-destructive merge)
+		var _hasLocalAdminCache = false;
 		try {
 			var _storedData = localStorage.getItem("saidkhan_site_data");
 			if (_storedData) {
 				var _parsedData = JSON.parse(_storedData);
 				if (_parsedData && (_parsedData.work || _parsedData.title)) {
-					if (_parsedData.info && Array.isArray(_parsedData.info.social)) {
-						_parsedData.info.social.forEach(function(s) {
-							if (s.url && !s.url.startsWith("http://") && !s.url.startsWith("https://") && !s.url.startsWith("//") && !s.url.startsWith("mailto:")) {
-								s.url = "https://" + s.url;
-							}
-						});
-					}
-
+					_hasLocalAdminCache = true;
 					// Auto-heal legacy or placeholder thumbs in cached work list
 					if (_parsedData.work && Array.isArray(_parsedData.work.list)) {
 						_parsedData.work.list.forEach(function(p) {
@@ -109,25 +127,48 @@
 						});
 						try { localStorage.setItem("saidkhan_site_data", JSON.stringify(_parsedData)); } catch(e){}
 					}
-
-					window.APP = window.APP || {};
-					window.APP.data = window.APP.data || {};
-
-					// Selectively update editable content sections while 100% preserving WebGL shaders, models, textures & sounds
-					if (_parsedData.title) window.APP.data.title = _parsedData.title;
-					if (_parsedData["page-title"]) window.APP.data["page-title"] = _parsedData["page-title"];
-					if (_parsedData.description) window.APP.data.description = _parsedData.description;
-					if (_parsedData.shareImage) window.APP.data.shareImage = _parsedData.shareImage;
-					if (_parsedData.home) window.APP.data.home = Object.assign(window.APP.data.home || {}, _parsedData.home);
-					if (_parsedData.work) window.APP.data.work = Object.assign(window.APP.data.work || {}, _parsedData.work);
-					if (_parsedData.press) window.APP.data.press = Object.assign(window.APP.data.press || {}, _parsedData.press);
-					if (_parsedData.art) window.APP.data.art = Object.assign(window.APP.data.art || {}, _parsedData.art);
-					if (_parsedData.prototypes) window.APP.data.prototypes = Object.assign(window.APP.data.prototypes || {}, _parsedData.prototypes);
-					if (_parsedData.info) window.APP.data.info = Object.assign(window.APP.data.info || {}, _parsedData.info);
+					window.APP.applyRemoteSiteData(_parsedData);
 				}
 			}
 		} catch (e) {
 			console.warn("Storage sync notice:", e);
+		}
+
+		// For visitors without local Admin session, bypass any stale browser cache of site.js via live site.json check
+		if (!_hasLocalAdminCache && typeof fetch === "function") {
+			fetch("data/site.json?t=" + Date.now(), { cache: "no-store" })
+				.then(function(r) { return r.ok ? r.json() : null; })
+				.then(function(fresh) {
+					if (!fresh) return;
+					var snapshot = function(d) {
+						return JSON.stringify([
+							d && d.work && d.work.list,
+							d && d.art && d.art.list,
+							d && d.press && d.press.list,
+							d && d.info && d.info.clients,
+							d && d.info && d.info.awards,
+							d && d.info && d.info.skills,
+							d && d.info && d.info.social,
+							d && d.info && d.info.bio
+						]);
+					};
+					if (snapshot(window.APP.data) !== snapshot(fresh)) {
+						window.APP.applyRemoteSiteData(fresh);
+						var refreshViews = function() {
+							if (APP.work && typeof APP.work.init === "function") APP.work.init();
+							if (APP.art && typeof APP.art.init === "function") APP.art.init();
+							if (APP.press && typeof APP.press.init === "function") APP.press.init();
+							if (APP.info && typeof APP.info.init === "function") APP.info.init();
+							if (APP.home && typeof APP.home.init === "function") APP.home.init();
+						};
+						if (document.readyState === "loading") {
+							document.addEventListener("DOMContentLoaded", refreshViews);
+						} else {
+							refreshViews();
+						}
+					}
+				})
+				.catch(function() {});
 		}
 	</script>
 	<script src="libs/utils.js?v=20261025_direct"></script>

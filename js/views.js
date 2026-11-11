@@ -764,7 +764,8 @@ APP.info = {
 
     //awards
     str = "";
-    $.each(data.awards, function (i, l) {
+    $.each(data.awards || [], function (i, l) {
+      if (!l || !l.file) return;
       str +=
         "<div data-aos='fade-in' data-aos-easing='ease-in-out' data-aos-offset='50' data-aos-duration='1000' data-aos-delay='50' class='list-item " +
         (l.class || "") +
@@ -774,18 +775,19 @@ APP.info = {
         (l.title || "") +
         "</div></div>";
     });
+    $(".info .awards-list").html(str);
     if (str != "") {
       $(".info .awards-title").html("[ awards | recognition ]");
-      $(".info .awards-list").html(str);
-      $(".info .awards").show();
+      $(".info .awards-block, .info .awards").show();
     } else {
-      // hide
-      $(".info .awards").hide();
+      $(".info .awards-title").html("");
+      $(".info .awards-block, .info .awards").hide();
     }
 
     //clients
     str = "";
-    $.each(data.clients, function (i, l) {
+    $.each(data.clients || [], function (i, l) {
+      if (!l || !l.file) return;
       str +=
         "<div data-aos='fade-in' data-aos-easing='ease-in-out' data-aos-offset='50' data-aos-duration='1000' data-aos-delay='50' class='list-item " +
         (l.class || "") +
@@ -795,13 +797,13 @@ APP.info = {
         (l.name || "client") +
         "' /></div>";
     });
+    $(".info .clients-list").html(str);
     if (str != "") {
       $(".info .clients-title").html("[ select clients ]");
-      $(".info .clients-list").html(str);
-      $(".info .clients").show();
+      $(".info .clients-block, .info .clients").show();
     } else {
-      // hide
-      $(".info .clients").hide();
+      $(".info .clients-title").html("");
+      $(".info .clients-block, .info .clients").hide();
     }
 
     // instafeed

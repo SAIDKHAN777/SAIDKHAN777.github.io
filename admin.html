@@ -1375,7 +1375,7 @@
 
           <div style="display:flex; gap:16px; align-items:center; margin-bottom:10px;">
             <div style="width:80px; height:60px; background:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.15); flex-shrink:0;">
-              <img id="client-thumb-preview" src="assets/images/clients/apple.png" alt="Preview" style="max-width:60px; max-height:40px; object-fit:contain;">
+              <img id="client-thumb-preview" src="icon.png" alt="Preview" style="max-width:60px; max-height:40px; object-fit:contain;">
             </div>
 
             <div style="flex:1;">
@@ -1384,7 +1384,7 @@
                 Upload Logo
               </button>
               <div style="margin-top:6px;">
-                <input type="text" id="client-image" class="input-control" placeholder="assets/images/clients/apple.png" style="font-size:11px; font-family:monospace; padding:6px 10px;" required>
+                <input type="text" id="client-image" class="input-control" placeholder="assets/images/clients/logo.png or Upload Logo" style="font-size:11px; font-family:monospace; padding:6px 10px;" required>
               </div>
               <div style="margin-top:8px;">
                 <label style="font-size:12px; color:#cbd5e1; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
@@ -1545,7 +1545,7 @@
       markClean();
       if (!silent) {
         if (!apiSaved) {
-          showToast("Changes saved in browser session! (Open http://localhost:3000/admin to sync with files)", true);
+          showToast("Saved to browser! Click 'Sync Live (GitHub & Vercel)' to publish to all PCs/devices.", true);
         }
       }
       return true;
@@ -2519,6 +2519,95 @@
       await saveChangesToDisk(false);
     });
 
+    // Encode UTF-8 string cleanly to Base64 for GitHub Contents API
+    function toUtf8Base64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) {
+        bin += String.fromCharCode(bytes[i]);
+      }
+      return btoa(bin);
+    }
+
+    async function pushGitHubFile(owner, repo, filePath, contentBase64, commitMsg, token) {
+      const apiBase = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+      const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json"
+      };
+      let sha = null;
+      const getRes = await fetch(`${apiBase}?ref=main`, { headers });
+      if (getRes.ok) {
+        const meta = await getRes.json();
+        sha = meta.sha || null;
+      } else if (getRes.status === 401 || getRes.status === 403) {
+        throw new Error("AUTH_INVALID");
+      }
+
+      const body = { message: commitMsg, content: contentBase64, branch: "main" };
+      if (sha) body.sha = sha;
+
+      const putRes = await fetch(apiBase, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(body)
+      });
+      if (!putRes.ok) {
+        if (putRes.status === 401 || putRes.status === 403) throw new Error("AUTH_INVALID");
+        const errJson = await putRes.json().catch(() => ({}));
+        throw new Error(errJson.message || `GitHub API error ${putRes.status}`);
+      }
+    }
+
+    async function syncDirectToGitHub(token) {
+      const payload = JSON.parse(JSON.stringify(SITE_DATA));
+      const repos = [
+        { owner: "SAIDKHAN777", repo: "SAIDKHAN777.github.io" },
+        { owner: "SAIDKHAN777", repo: "saidkhan_org" }
+      ];
+      const uploadedAssets = [];
+      const ts = Date.now();
+      let assetIdx = 0;
+
+      // Extract inline base64 images from arrays so static JSON stays lightweight on all devices
+      const extractBase64 = (obj, prop, prefix) => {
+        if (!obj || typeof obj[prop] !== "string" || !obj[prop].startsWith("data:image/")) return;
+        const m = obj[prop].match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+        if (!m) return;
+        const ext = m[1].replace("jpeg", "jpg").replace("svg+xml", "svg");
+        const safeTitle = (obj.name || obj.title || "asset").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "item";
+        const relPath = `assets/images/uploads/${ts}-${assetIdx++}-${prefix}-${safeTitle}.${ext}`;
+        uploadedAssets.push({ path: relPath, base64: m[2] });
+        obj[prop] = relPath;
+        if (obj.feature && Array.isArray(obj.feature.images) && obj.feature.images[0]) {
+          obj.feature.images[0].file = relPath;
+        }
+      };
+
+      (payload.info?.clients || []).forEach(c => extractBase64(c, "file", "client"));
+      (payload.info?.awards || []).forEach(a => extractBase64(a, "file", "award"));
+      (payload.work?.list || []).forEach(w => extractBase64(w, "thumb", "work"));
+      (payload.art?.list || []).forEach(a => extractBase64(a, "thumb", "art"));
+      (payload.press?.list || []).forEach(p => extractBase64(p, "thumb", "press"));
+
+      const siteJsonB64 = toUtf8Base64(JSON.stringify(payload, null, 2) + "\n");
+      const siteJsB64 = toUtf8Base64("APP.data = " + JSON.stringify(payload, null, 2) + ";\n");
+      const commitMsg = "chore(admin): live publish portfolio & client logos from admin console";
+
+      for (const target of repos) {
+        for (const asset of uploadedAssets) {
+          await pushGitHubFile(target.owner, target.repo, asset.path, asset.base64, commitMsg, token);
+        }
+        await pushGitHubFile(target.owner, target.repo, "data/site.json", siteJsonB64, commitMsg, token);
+        await pushGitHubFile(target.owner, target.repo, "data/site.js", siteJsB64, commitMsg, token);
+      }
+
+      SITE_DATA = payload;
+      try { localStorage.setItem("saidkhan_site_data", JSON.stringify(SITE_DATA)); } catch (e) {}
+      renderAll();
+    }
+
     // Sync Live to GitHub & Vercel
     const btnSyncGit = document.getElementById("btn-sync-git");
     if (btnSyncGit) {
@@ -2529,21 +2618,57 @@
         btnSyncGit.disabled = true;
 
         try {
-          const res = await fetch("/api/git-sync", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${AUTH_TOKEN}`
+          let localSynced = false;
+          try {
+            const res = await fetch("/api/git-sync", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${AUTH_TOKEN}`
+              }
+            });
+            const ct = res.headers.get("content-type") || "";
+            if (ct.includes("application/json")) {
+              const json = await res.json();
+              if (res.ok && json.success) {
+                localSynced = true;
+                showToast(json.message || "All changes pushed live to GitHub Pages & Vercel!", true);
+              } else {
+                alert(json.error || "Git sync failed.");
+                localSynced = true;
+              }
             }
-          });
-          const json = await res.json();
-          if (json.success) {
-            showToast(json.message || "All changes pushed live to GitHub Pages & Vercel!", true);
-          } else {
-            alert(json.error || "Git sync failed.");
+          } catch (apiErr) {
+            // Static host (GitHub Pages / Vercel) - fallback to direct GitHub REST API sync
           }
-        } catch (err) {
-          alert("To sync live, make sure local server is active (http://localhost:3000/admin) or download JSON from System & Backup.");
+
+          if (!localSynced) {
+            let ghToken = localStorage.getItem("saidkhan_gh_token") || "";
+            if (!ghToken) {
+              const entered = prompt(
+                "সব ডিভাইসে লাইভ পাবলিশ করতে আপনার GitHub Personal Access Token (Contents: Read & Write) দিন:\n(টোকেন শুধু আপনার ব্রাউজারে সেভ থাকবে)"
+              );
+              if (!entered || !entered.trim()) {
+                showToast("Publish cancelled. Use Export Backup if needed.", false);
+                return;
+              }
+              ghToken = entered.trim();
+              localStorage.setItem("saidkhan_gh_token", ghToken);
+            }
+
+            try {
+              await syncDirectToGitHub(ghToken);
+              markClean();
+              showToast("Published live to GitHub Pages & Vercel! Other PCs will update within ~30s.", true);
+            } catch (ghErr) {
+              if (ghErr.message === "AUTH_INVALID") {
+                localStorage.removeItem("saidkhan_gh_token");
+                alert("GitHub Token টি সঠিক নয় বা মেয়াদ শেষ হয়েছে। আবার চেষ্টা করে নতুন Token দিন।");
+              } else {
+                alert("Live publish error: " + ghErr.message);
+              }
+            }
+          }
         } finally {
           btnSyncGit.innerHTML = originalText;
           btnSyncGit.disabled = false;
@@ -2937,7 +3062,7 @@
       document.getElementById("client-edit-index").value = "-1";
       document.getElementById("client-name").value = "";
       document.getElementById("client-image").value = "";
-      document.getElementById("client-thumb-preview").src = "assets/images/clients/apple.png";
+      document.getElementById("client-thumb-preview").src = "icon.png";
       document.getElementById("client-modal").classList.add("active");
     }
 
@@ -2952,7 +3077,7 @@
       document.getElementById("client-edit-index").value = index;
       document.getElementById("client-name").value = client.name || "";
       document.getElementById("client-image").value = client.file || "";
-      document.getElementById("client-thumb-preview").src = client.file || "assets/images/clients/apple.png";
+      document.getElementById("client-thumb-preview").src = client.file || "icon.png";
       document.getElementById("client-modal").classList.add("active");
     }
 
